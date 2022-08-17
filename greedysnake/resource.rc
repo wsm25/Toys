@@ -17,15 +17,15 @@ LANGUAGE LANG_CHINESE, SUBLANG_SYS_DEFAULT
 
 // RT_GROUP_ICON
 
-ICON ICON "res/2052_Icon_ICON.ico"
+1 ICON "ICON.ico"
 
 //////////////////////////////////////////////////////////////////////////////
 
 // RT_VERSION
 
 1 VERSIONINFO
-FILEVERSION     0, 0, 0, 0
-PRODUCTVERSION  0, 0, 0, 0
+FILEVERSION     0, 4, 0, 4
+PRODUCTVERSION  0, 4, 0, 4
 FILEOS          0x40004
 FILETYPE        0x1
 {
@@ -44,34 +44,4 @@ FILETYPE        0x1
         VALUE "Translation", 0x0409, 0x04E4
     }
 }
-
-//////////////////////////////////////////////////////////////////////////////
-
-// TEXTINCLUDE
-
-#ifdef APSTUDIO_INVOKED
-
-1 TEXTINCLUDE
-BEGIN
-    "resource.h\0"
-END
-
-2 TEXTINCLUDE
-BEGIN
-    "#define APSTUDIO_HIDDEN_SYMBOLS\r\n"
-    "#include <windows.h>\r\n"
-    "#include <commctrl.h>\r\n"
-    "#undef APSTUDIO_HIDDEN_SYMBOLS\r\n"
-    "\0"
-END
-
-3 TEXTINCLUDE
-BEGIN
-    "\r\n"
-    "\0"
-END
-
-#endif    // APSTUDIO_INVOKED
-
-//////////////////////////////////////////////////////////////////////////////
 
