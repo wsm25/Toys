@@ -1,15 +1,28 @@
 objects = main.o apple.o snake.o wSDL.o ico.o
-libs	= -lmingw32 -lSDL2main -lSDL2 -lsetupapi -lwinmm -limm32 -lversion -lole32 -loleaut32 -lgdi32
+SDLlibs = -lmingw32 -lSDL2main -lSDL2 
+libs	= -lsetupapi -lwinmm -limm32 -lversion -lole32 -loleaut32 -lgdi32
+dynlibs = -Wl,-Bstatic -lgcc -lstdc++ -lwinpthread
 CPPFLAGS= -O3
 greedysnake.exe: $(objects)
-	g++ -static -O3 -o greedysnake.exe $(objects) $(libs)
-	strip greedysnake.exe
+	$(CXX) -static -O3 -o $@ $(objects) $(SDLlibs) $(libs)
+	strip $@
 
 $(objects): consts.h apple.h snake.h wSDL.h
 
 ico.o: resource.rc ICON.ico
 	windres -i "resource.rc" -o "ico.o"
 
+dynamic: $(objects)
+	$(CXX) -O3 -o greedysnake.exe $(objects) $(SDLlibs) $(dynlibs)
+	strip greedysnake.exe
+
+dyn: $(objects)
+	$(CXX) -O3 -o greedysnake.exe $(objects) $(SDLlibs)
+	strip greedysnake.exe
+	
 # .PHONY : clean
 clean :
-	del edit $(objects)
+	-del edit $(objects)
+
+haha :
+	echo $(RM)
