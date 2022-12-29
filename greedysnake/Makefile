@@ -23,7 +23,7 @@ dyn: $(objects)
 	
 # .PHONY : clean
 clean :
-	-del edit $(objects)
+	$(RM) edit $(objects)
 
 haha :
 	echo $(RM)
