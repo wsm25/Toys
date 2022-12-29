@@ -3,9 +3,10 @@ SDLlibs = -lmingw32 -lSDL2main -lSDL2
 libs	= -lsetupapi -lwinmm -limm32 -lversion -lole32 -loleaut32 -lgdi32
 dynlibs = -Wl,-Bstatic -lgcc -lstdc++ -lwinpthread
 CPPFLAGS= -O3
+CXX=x86_64-w64-mingw32-g++
 greedysnake.exe: $(objects)
 	$(CXX) -static -O3 -o $@ $(objects) $(SDLlibs) $(libs)
-	strip $@
+	x86_64-w64-mingw32-strip $@
 
 $(objects): consts.h apple.h snake.h wSDL.h
 
