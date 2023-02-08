@@ -32,7 +32,7 @@ graph TD
 - 假设：只要 NAT 背后的 Client 向一个 ip:port 发送了数据，Mapping 和 Filtering 就都建立了。
 - 有些 NAT 设备有 NAT 分配端口段，提前了解这些规律可以缩减随机端口的范围，以减少占用的端口达到相近的探测成功率。
 - 有些 NAT 设备对单内网 ip 的映射规则分配数有限制（据说电信 2000，联通 1000，移动 500），注意别超过了。
-- 若双方都是 Address and Port-Dependent Filtering Behaviour 则成功概率降低到 $\frac{384}{65536^2}\approx10^{-7}$，几乎不可能。只能进行一些端口预测（这在 NAT 设备已分配端口数较多时几乎不可行）。这种情况，大概只会在企业 NAT 中出现，为了保证内网安全。在这种内网，如果真的有需求，与其研究技术，不如跟领导说：我要 UDnP！或者审问自己：真的需要端到端吗？
+- 若双方都是 Address and Port-Dependent Filtering Behaviour 则成功概率降低到 $\frac{384}{65536^2}\approx10^{-7}$，几乎不可能。只能进行一些端口预测（这在 NAT 设备已分配端口数较多时几乎不可行）。这种情况，大概只会在企业 NAT 中出现，为了保证内网安全。在这种内网，如果真的有需求，与其研究技术，不如跟领导说：我要 UPnP！或者审问自己：真的需要端到端吗？
 - 若一方是 Address and Port-Dependent Filtering Behaviour，一方是 Address-Dependent Filtering 及以下，理论上也可以运行。
 - 若一方(Client2)是 Endpoint Independent but Address and Port-Dependent Filtering, 只要把上述流程中 Client1 的目的端口固定就行。
 - 有的设备甚至在 RFC 标准之上添加了 Protocol Mapping 和 Filtering。对于 UDP 的穿透无影响，但对 TCP 就可能需要一些伪造的 ACK 包（如果那些设备需要 ACK 包建立合法映射）。（猜测，无依据）
