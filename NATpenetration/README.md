@@ -53,4 +53,4 @@ graph TD
 
 [^1]:https://www.rfc-editor.org/rfc/rfc4787#section-5
 [^2]:https://www.wolframalpha.com/input?i=1-N%5BC%5B65536-x%2Cx%5D%5D%2FN%5BC%5B65536%2Cx%5D%5D%2C+x%3D384
-[^3]: https://arthurchiao.art/blog/how-nat-traversal-works-zh/
+[^3]:https://arthurchiao.art/blog/how-nat-traversal-works-zh/
