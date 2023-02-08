@@ -1,10 +1,10 @@
 
 
-# 穿透对称型 NAT 设备[^3]
+# 穿透对称型 NAT 设备[^1]
 
 （~~一个晚上的思考结果~~）
 
-尝试消耗尽可能少的资源（大约 400 个 内网端口和 NAT 设备的 Map 规则），使用（生日攻击式的）端口探测的方式，穿透 Address and Port-Dependent Mapping 且 Address-Dependent Filtering[^1]（及以下安全等级）的 NAT 设备，且假设 NAT 设备分配的 ip 地址唯一（绝大多数情况都是如此）。
+尝试消耗尽可能少的资源（大约 400 个 内网端口和 NAT 设备的 Map 规则），使用（生日攻击式的）端口探测的方式，穿透 Address and Port-Dependent Mapping 且 Address-Dependent Filtering[^2]（及以下安全等级）的 NAT 设备，且假设 NAT 设备分配的 ip 地址唯一（绝大多数情况都是如此）。
 
 网络结构：
 
@@ -27,7 +27,7 @@ graph TD
 5[抛弃其他端口只保留建立连接者]
 ```
 
-> \* 此时探测成功率达到 $1-{{65536-384}\choose{384}}/{{65536}\choose{384}}\approx89.6\%$[^2]
+> \* 此时探测成功率达到 $1-{{65536-384}\choose{384}}/{{65536}\choose{384}}\approx89.6\%$[^3]
 
 注：
 
@@ -51,6 +51,7 @@ graph TD
 
 参考文献：
 
-[^1]:https://www.rfc-editor.org/rfc/rfc4787#section-5
-[^2]:https://www.wolframalpha.com/input?i=1-N%5BC%5B65536-x%2Cx%5D%5D%2FN%5BC%5B65536%2Cx%5D%5D%2C+x%3D384
-[^3]:https://arthurchiao.art/blog/how-nat-traversal-works-zh/
+[^1]:https://arthurchiao.art/blog/how-nat-traversal-works-zh/
+[^2]:https://www.rfc-editor.org/rfc/rfc4787#section-5
+[^3]:https://www.wolframalpha.com/input?i=1-N%5BC%5B65536-x%2Cx%5D%5D%2FN%5BC%5B65536%2Cx%5D%5D%2C+x%3D384
+
