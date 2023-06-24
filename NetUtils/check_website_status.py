@@ -1,3 +1,4 @@
+# 上海教育考试院查分小工具
 import requests, time, os
 
 url=input("输入网址：")
