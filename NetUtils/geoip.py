@@ -1,3 +1,4 @@
+# 感谢 IP.SB 提供的公共 API！
 # !pip install curl_cffi
 import requests, sys, json
 from curl_cffi import requests
