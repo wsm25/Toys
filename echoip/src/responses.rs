@@ -4,7 +4,8 @@ pub fn generate_index(content: String) ->String{
   Connection: keep-alive\r\n\
   Content-Type: text/plain\r\n\
   \r\n\
-  {}", content.len(), content)
+  {}\r\n\
+  ", content.len()+2, content)
 }
 
 pub static NOT_FOUND: &[u8] = 
