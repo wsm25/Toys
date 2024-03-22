@@ -1,0 +1,36 @@
+services:
+  - name: https-proxy
+    addr: :443
+    bypasses:
+      - cnip
+      - cndm
+      - localip
+    handler:
+      type: http
+      auth:
+        username: admin
+        password: $(openssl rand -base64 24)
+    listener:
+      type: tls
+      tls:
+        certFile: /path/to/cert
+        keyFile: /path/to/key
+bypasses:
+- name: cnip
+  file:
+    path: cnip.txt
+- name: cndm
+  file:
+    path: cndm.txt
+- name: localip
+  matchers:
+  0.0.0.0/8
+  10.0.0.0/8
+  127.0.0.0/8
+  169.254.0.0/16
+  172.16.0.0/12
+  192.168.0.0/16
+  224.0.0.0/3
+  
+  
+  
