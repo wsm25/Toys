@@ -2,6 +2,8 @@
 
 可以使你省去目测实词的痛苦而无用的时光  
 
+Update 2024.03.22: 为本人首个 Github 仓库和作品，留作纪念。git 历史放在了 `git.zip` 中。
+
 **说明：本软件只用作检索实词，字词解释自行查字典**。
 
 👉<a href="https://attachments-cdn.shimo.im/wbgEwdm91b0dMWJt/lr.exe" target="_blank" rel="noopener noreferrer">下载1</a>👈（如果403 Forbidden，请新标签页打开）		[下载2](https://github.com/wsm25/lr/releases/download/v1.1.0/lr.exe)
