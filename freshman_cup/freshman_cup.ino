@@ -66,11 +66,12 @@ void loop() {
       else if(r>rright) rright=r;
     }
   } while(oldscan);
-  float r=rleft<rright?rleft:-rright;
+  float r=rleft<rright?-rleft:rright;
   float angle=calc_angle(r);
+  if(angle<min_angle) angle=0;
   Speeds speed=calc_speed(angle);
   #ifdef Debug
-  Serial.printf("Operation on this loop: angle=%4d, speed=%4d\r\n\r\n", 
+  Serial.printf("Operation on this loop: angle=%3f, speed=%2d\r\n\r\n", 
     angle, (speed.left+speed.right)/2);
   #endif
   servo.write(angle + servo_offset);
