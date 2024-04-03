@@ -1,25 +1,19 @@
-#include <RPLidarC1.h>
 #include <ESP32Servo.h>
+#include <RPLidarC1.h>
+
 #include "MotorDriver.h"
+#include "consts.h"
+#include "cup_maths.h"
 
-const int SERVO_PIN = 3;  // 舵机引脚
-
-const int LEFT_DIR_PIN = 8;
-const int RIGHT_DIR_PIN = 9;
-const int LEFT_MOTOR_PIN = 13;
-const int RIGHT_MOTOR_PIN = 12;
-
-RPLidar lidar;                                                                    // 创建激光雷达对象
-Servo servo;                                                                      // 创建舵机对象
-MotorDriver motor(LEFT_DIR_PIN, LEFT_MOTOR_PIN, RIGHT_DIR_PIN, RIGHT_MOTOR_PIN);  // 创建电机驱动器对象
-
-int servo_angle = 90;
-int servo_offset = 5;  // 用于调整舵机中点
-int left_speed = 0;
-int right_speed = 0;
+RPLidar lidar; 
+Servo servo; 
+MotorDriver motor(LEFT_DIR_PIN, LEFT_MOTOR_PIN, 
+                  RIGHT_DIR_PIN, RIGHT_MOTOR_PIN);
 
 void setup() {
+  #ifdef Debug
   Serial.begin(115200);
+  #endif
   lidar.begin(Serial2);
   lidar.startScan();
   // 开启计时器，用于舵机PWM控制
@@ -29,25 +23,56 @@ void setup() {
   ESP32PWM::allocateTimer(3);
   servo.setPeriodHertz(50);  // 设置舵机PWM频率
   servo.attach(SERVO_PIN);   // 连接舵机引脚
-  servo.write(servo_angle + servo_offset);
-
-  motor.begin();  // 开启电机驱动 
-  motor.driveAllMotor(left_speed, right_speed);
+  servo.write(servo_offset);
+  motor.begin();  // 开启电机驱动
 }
 
 void loop() {
-  if (IS_OK(lidar.waitPoint())) {                               // 等到一个新的扫描点
-    double distance = lidar.getCurrentPoint().distance / 1000;  // 距离值，单位m
-    int angle = lidar.getCurrentPoint().angle;                  // 角度值（整数，四舍五入）
-    bool startBit = lidar.getCurrentPoint().startBit;
-    byte quality = lidar.getCurrentPoint().quality;
-
-    if (startBit) {  // 每进入一次新的扫描处理并控制一次
-
-      servo.write(servo_angle + servo_offset);
-      motor.driveAllMotor(left_speed, right_speed);
+  #ifdef Debug
+  Serial.println("=============================\r\nNew loop begins!");
+  #endif
+  float rleft=0, rright=0;
+  bool oldscan=true;
+  RPLidarMeasurement p;
+  do{
+    for(int i=0; oldscan && i<passrate; i++){ // pass and read
+      if (IS_FAIL(lidar.waitPoint(lidartimeout))){ // fail, restart and rescan
+        lidar.startScan(false, lidartimeout);
+        #ifdef Debug
+        Serial.println("Lidar off! restarting...");
+        #endif
+        continue;
+      }
+      p=lidar.getCurrentPoint(); // include 3 32-bit copy
+      oldscan=!p.startBit;
     }
-  } else {  // 出现错误，重新启动雷达
-    lidar.startScan();
-  }
+    #ifdef Debug
+    Serial.printf("New data: (%6.4f, %6.4f)\r\n", p.angle, p.distance);
+    #endif
+    if (p.distance<min_dist || p.distance>max_dist) continue; // ignore invalid distance
+    // get biggest r
+    // TODO: crash detection
+    if (p.angle>180){ // left
+      if (p.angle<min_langle || p.angle>max_langle) continue;
+      if (rleft<0) continue;
+      float r=calc_rl(p.distance, p.angle);
+      if (r<0) rleft=r;
+      else if(r>rleft) rleft=r;
+    } else {
+      if (p.angle<min_rangle || p.angle>max_rangle) continue;
+      if (rright<0) continue;
+      float r=calc_rr(p.distance, p.angle);
+      if (r<0) rright=r;
+      else if(r>rright) rright=r;
+    }
+  } while(oldscan);
+  float r=rleft<rright?rleft:-rright;
+  float angle=calc_angle(r);
+  Speeds speed=calc_speed(angle);
+  #ifdef Debug
+  Serial.printf("Operation on this loop: angle=%4d, speed=%4d\r\n\r\n", 
+    angle, (speed.left+speed.right)/2);
+  #endif
+  servo.write(angle + servo_offset);
+  motor.driveAllMotor(speed.left, speed.right);
 }

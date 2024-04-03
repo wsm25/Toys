@@ -1,9 +1,12 @@
 #include "Arduino.h"
 #include "MotorDriver.h"
 
-MotorDriver::MotorDriver(int pin1, int pin2, int pin3, int pin4) : left_dir_pin(pin1), left_motor_pin(pin2), right_dir_pin(pin3), right_motor_pin(pin4)
-{
-}
+MotorDriver::MotorDriver(int pin1, int pin2, int pin3, int pin4):
+    left_dir_pin(pin1), 
+    left_motor_pin(pin2), 
+    right_dir_pin(pin3), 
+    right_motor_pin(pin4)
+{}
 
 MotorDriver::~MotorDriver() {}
 
