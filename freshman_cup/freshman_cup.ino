@@ -35,20 +35,15 @@ void loop() {
   bool oldscan=true;
   RPLidarMeasurement p;
   do{
-    for(int i=0; oldscan && i<passrate; i++){ // pass and read
-      if (IS_FAIL(lidar.waitPoint(lidartimeout))){ // fail, restart and rescan
-        lidar.startScan(false, lidartimeout);
-        #ifdef Debug
-        Serial.println("Lidar off! restarting...");
-        #endif
-        continue;
-      }
-      p=lidar.getCurrentPoint(); // include 3 32-bit copy
-      oldscan=!p.startBit;
+    if (IS_FAIL(lidar.waitPoint(lidartimeout))){ // fail, restart and rescan
+      lidar.startScan(false, lidartimeout);
+      #ifdef Debug
+      Serial.println("Lidar off! restarting...");
+      #endif
+      continue;
     }
-    #ifdef Debug
-    Serial.printf("New data: (%6.4f, %6.4f)\r\n", p.angle, p.distance);
-    #endif
+    p=lidar.getCurrentPoint(); // include 3 32-bit copy
+    oldscan=!p.startBit;
     if (p.distance<min_dist || p.distance>max_dist) continue; // ignore invalid distance
     // get biggest r
     // TODO: crash detection
@@ -65,15 +60,26 @@ void loop() {
       if (r<0) rright=r;
       else if(r>rright) rright=r;
     }
+    #ifdef Debug
+    // Serial.printf("New data: (%6.4f, %6.4f)\r\n", p.angle, p.distance);
+    #endif
   } while(oldscan);
-  float r=rleft<rright?-rleft:rright;
-  float angle=calc_angle(r);
-  if(angle<min_angle) angle=0;
+  float angle;
+  if(rleft==0) {
+    if (rright==0) angle=0;
+    else angle=340;
+  } else {
+    if (rright==0) angle=20;
+    else if(rleft>rright) angle=360-calc_angle(rleft)*(rleft-rright)/(rleft+rright)*3;
+    else angle=calc_angle(rright)*(rright-rleft)/(rleft+rright)*3;
+  } 
+  
+  // if(angle<min_angle || angle>360-min_angle) angle=0;
   Speeds speed=calc_speed(angle);
   #ifdef Debug
-  Serial.printf("Operation on this loop: angle=%3f, speed=%2d\r\n\r\n", 
-    angle, (speed.left+speed.right)/2);
+  Serial.printf("Operation on this loop: rl=%3f, rr=%3f, angle=%3f, speed=%3f\r\n\r\n", 
+    rleft, rright, angle, (speed.left+speed.right)/2);
   #endif
-  servo.write(angle + servo_offset);
+  servo.write((-int(angle)+servo_offset+720)%360);
   motor.driveAllMotor(speed.left, speed.right);
 }
