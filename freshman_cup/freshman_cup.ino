@@ -15,7 +15,7 @@ void setup() {
   Serial.begin(115200);
   #endif
   lidar.begin(Serial2);
-  lidar.startScan();
+  lidar.startScan(lidartimeout);
   // 开启计时器，用于舵机PWM控制
   ESP32PWM::allocateTimer(0);
   ESP32PWM::allocateTimer(1);
@@ -33,7 +33,6 @@ void loop() {
   #endif
   float rleft=0, rright=0;
   bool oldscan=true;
-  RPLidarMeasurement p;
   do{
     if (IS_FAIL(lidar.waitPoint(lidartimeout))){ // fail, restart and rescan
       lidar.startScan(false, lidartimeout);
@@ -42,7 +41,7 @@ void loop() {
       #endif
       continue;
     }
-    p=lidar.getCurrentPoint(); // include 3 32-bit copy
+    auto&p=lidar.getCurrentPoint(); // include 3 32-bit copy
     oldscan=!p.startBit;
     if (p.distance<min_dist || p.distance>max_dist) continue; // ignore invalid distance
     // get biggest r
