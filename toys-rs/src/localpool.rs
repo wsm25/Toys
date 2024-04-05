@@ -1,7 +1,4 @@
-/*! 
-# Pool-rs
-A simple single-thread object pool.
-
+/*! A simple single-thread object pool.
 # TODO
 - [ ] compatible with tokio-local
 - [x] implement for types with lifetime
