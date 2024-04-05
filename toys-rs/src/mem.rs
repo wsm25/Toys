@@ -1,4 +1,5 @@
-use std::alloc::{alloc, dealloc, Layout};
+//! Elegant wrapper of [std::alloc]
+use std::alloc::{alloc, dealloc, realloc, Layout};
 
 /// Allocates memory for type `T` without initilization.
 /// 
@@ -19,6 +20,15 @@ pub unsafe fn from<T>(x:T)->*mut T{
     let p=new::<T>();
     p.write(x);
     p
+}
+
+/// Allocates memory for array `[T;n]` without initilization.
+/// 
+/// # Safety
+/// See [new]
+#[inline(always)]
+pub unsafe fn new_arr<T>(n: usize)->*mut T{
+    alloc(Layout::array::<T>(n).unwrap()) as *mut T
 }
 
 /// Deallocates memory for pointer `ptr`.
@@ -43,3 +53,40 @@ pub unsafe fn from<T>(x:T)->*mut T{
 pub unsafe fn delete<T>(ptr: *mut T){
     dealloc(ptr as *mut u8, Layout::new::<T>())
 }
+
+/// Deallocates memory for an array pointer with size `n`.
+/// # Safety
+/// See [delete]
+#[inline(always)]
+pub unsafe fn delete_arr<T>(ptr: *mut T, n: usize){
+    dealloc(ptr as *mut u8, Layout::array::<T>(n).unwrap())
+}
+
+/// Deallocates memory for a slice reference.
+/// # Safety
+/// See [delete]
+#[inline(always)]
+pub unsafe fn delete_slice<T>(slice: &mut [T]){
+    dealloc(slice.as_mut_ptr() as *mut u8, Layout::for_value(slice))
+}
+
+/// Resize the array pointer to given length. 
+/// 
+/// Note that if return pointer is null, that means the new object
+/// could not be allocated in place, thus old pointer should remains.
+/// 
+/// # Safety
+/// You MUST correctly handle null pointer returned.
+/// 
+/// And see [std::alloc::GlobalAlloc::realloc]
+#[inline(always)]
+pub unsafe fn resize_arr<T>(ptr: *mut T, oldlen: usize, newlen: usize)->*mut T{
+    realloc(ptr as *mut u8, 
+        Layout::array::<T>(oldlen).unwrap(),
+        Layout::array::<T>(newlen).unwrap().size())
+    as *mut T
+}
+
+/// Returns a `*mut T` null pointer
+#[inline(always)]
+pub const fn nullptr<T>()->*mut T{0 as *mut T}

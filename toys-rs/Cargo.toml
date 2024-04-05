@@ -1,8 +1,12 @@
 [package]
-name = "local_pool"
+name = "toys-rs"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+
+[dev-dependencies]
+tokio = {version="1", features=["rt", "time"]}
+rand = "0.8"
