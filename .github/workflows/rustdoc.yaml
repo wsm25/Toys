@@ -5,6 +5,7 @@ on:
    - main
    paths:
    - 'toys-rs'
+  workflow_dispatch:
 
 env:
   CARGO_INCREMENTAL: 0
