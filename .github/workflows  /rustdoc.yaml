@@ -1,0 +1,37 @@
+name: rustdoc
+on:
+  push:
+   branches:
+   - main
+   paths:
+   - 'toys-rs'
+
+env:
+  CARGO_INCREMENTAL: 0
+  CARGO_NET_RETRY: 10
+  RUSTFLAGS: "-D warnings -W unreachable-pub"
+  RUSTUP_MAX_RETRIES: 10
+
+jobs:
+  rustdoc:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install Rust toolchain
+      run: rustup update --no-self-update stable
+
+    - name: Build Documentation
+      working-directory: ./toys-rs
+      run: cargo doc --all --no-deps
+
+    - name: Deploy Docs
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.PAGE_DEPLOY_KEY }}
+        publish_branch: main
+        publish_dir: toys-rs/target/doc
+        destination_dir: toys-rs
+        force_orphan: true
