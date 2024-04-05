@@ -31,7 +31,8 @@ jobs:
     - name: Deploy Docs
       uses: peaceiris/actions-gh-pages@v3
       with:
-        github_token: ${{ secrets.PAGE_DEPLOY_KEY }}
+        deploy_key: ${{ secrets.PAGE_SSH_KEY }}
+        external_repository: wsm25/wsm25.github.io
         publish_branch: main
         publish_dir: toys-rs/target/doc
         destination_dir: toys-rs
