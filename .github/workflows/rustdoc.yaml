@@ -36,4 +36,3 @@ jobs:
         publish_branch: main
         publish_dir: toys-rs/target/doc
         destination_dir: toys-rs
-        force_orphan: true
