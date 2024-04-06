@@ -105,7 +105,7 @@ impl<'a, T> Pool<'a, T>{
         }})
     }
     
-    /// Constructs a new object Pool which provides `T` objeccts
+    /// Constructs a new object Pool which provides `T` objects
     /// cloned from `value:T where T:Clone`. 
     /// 
     /// SAFETY: value should outlive pool itself
@@ -200,32 +200,33 @@ mod tests {
     #[test]
     fn test_clone(){
         use super::*;
-        let p:Pool<i32>=unsafe{Pool::new()};
+        let p:Pool<i32>=Pool::with_init(|_|{});
         let mut p1=p.clone();
         drop(p1.get()); // make sure p1 not stripped
     }
 
-    /*
+    
     #[test]
     fn test_tokio(){
         use tokio::{
-            time::{Duration, sleep},
             runtime::Builder,
-            task::{LocalSet, spawn_local},
+            task::{LocalSet, spawn_local, yield_now},
         };
-        use rand::random;
         use super::*;
-        async fn sleepygreeting(mut lock: LocalLock, x: isize){
-            lock.lock().await;
-            sleep(Duration::from_nanos(random::<u64>()%0x1000)).await;
-            println!("Greetings from {x}!");
+        async fn sleepygreeting<'a>(mut pool: Pool<'a, i32>){
+            let x=pool.get();
+            if true==rand::random(){
+                yield_now().await;
+            }
+            println!("Get {} from pool!", *x);
         }
         async fn tokio_main(){
-            let pool = unsafe{Pool::new()};
+            let mut ipool=0;
+            let pool = Pool::with_generator(move||{ipool+=1; ipool});
             let mut tasks = Vec::new();
-            for i in 0..10{
+            for _ in 0..10{
                 tasks.push(spawn_local(
-                    sleepygreeting(pool.clone(), i)
+                    sleepygreeting(pool.clone())
                 ));
             }
             for t in tasks{
@@ -236,9 +237,8 @@ mod tests {
             LocalSet::new().run_until(tokio_main())
         );
     }    
-    */
+    
 }
 
 use std::{cell::UnsafeCell, rc::Rc};
-
 use crate::mem;
