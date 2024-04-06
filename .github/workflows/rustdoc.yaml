@@ -1,4 +1,4 @@
-name: rustdoc
+name: "Toys-rs: Test and Publish Doc"
 on:
   push:
    branches:
@@ -24,6 +24,10 @@ jobs:
     - name: Install Rust toolchain
       run: rustup update --no-self-update stable
 
+    - name: Cargo Test
+      working-directory: ./toys-rs
+      run: cargo test -- --nocapture
+      
     - name: Build Documentation
       working-directory: ./toys-rs
       run: cargo doc --all --no-deps
