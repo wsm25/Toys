@@ -5,20 +5,16 @@
 - [ ] automatic shrink
 
 Abandoned:
-- DST support: deprecated with Box<_>
+- DST support: deprecated with `Box<_>`
 - variable `INIT_SIZE`: rust still has inferring bugs for generic const
 */
 
 const INIT_SIZE:usize=8; // init size
 
-struct RawPool<'a, T>{ // lifetime for new function
+struct RawPool<'a, T>{ // `'a`: lifetime for `newfn`
     pool: Vec<*mut T>,
     newfn: Box<dyn FnMut()->*mut T+'a>
 }
-
-#[derive(Clone)]
-pub struct Pool<'a, T>
-    (Rc<UnsafeCell<RawPool<'a, T>>>);
 
 /// An object pool that generates and stores [PoolBox].
 /// 
@@ -39,13 +35,15 @@ pub struct Pool<'a, T>
 /// ```rust
 /// use toys_rs::localpool::Pool;
 /// let mut counter = 1;
-/// let mut p : Pool = 
-///     Pool::with_init(|x|{*x=counter; counter+=1;});
+/// let mut p = Pool::with_init(|x|{*x=counter; counter+=1;});
 /// assert_eq!(*p.get(), 8);
 /// // Now the p.get() is dropped, so it is put into pool.
 /// // Another get() will get the same object.
 /// assert_eq!(*p.get(), 8);
 /// ```
+#[derive(Clone)]
+pub struct Pool<'a, T>
+    (Rc<UnsafeCell<RawPool<'a, T>>>);
 
 impl<'a, T> Pool<'a, T>{
     fn inner(&self)->&mut RawPool<'a, T>{
@@ -62,8 +60,11 @@ impl<'a, T> Pool<'a, T>{
         }
     }
 
-    /// Puts object back into pool(unnecessary)
-    pub fn put(&mut self, _: PoolBox<T>){} // automatically call drop
+    /// **Unnecessary** as `PoolBox`'s drop function will automatically put back into pool
+    /// 
+    /// Reserved only for 
+    #[deprecated="use drop instead"]
+    pub fn put(&mut self, _: PoolBox<T>){}
 
     fn with_new<New>(mut newfn: New)->Self
         where New:FnMut()->*mut T+'a{
@@ -193,7 +194,7 @@ mod tests {
     fn test_gen(){
         use super::*;
         let mut x=1;
-        let mut p:Pool<_>=Pool::with_generator(||{let y=x; x+=1; y});
+        let mut p=Pool::with_generator(||{let y=x; x+=1; y});
         assert_eq!(*p.get(), INIT_SIZE);
     }
 
@@ -214,17 +215,19 @@ mod tests {
         };
         use super::*;
         async fn sleepygreeting<'a>(mut pool: Pool<'a, i32>){
-            let x=pool.get();
-            if true==rand::random(){
-                yield_now().await;
+            for _ in 0..5{
+                let x=pool.get();
+                if true==rand::random(){
+                    yield_now().await;
+                }
+                println!("Get {} from pool!", *x);
             }
-            println!("Get {} from pool!", *x);
         }
         async fn tokio_main(){
             let mut ipool=0;
             let pool = Pool::with_generator(move||{ipool+=1; ipool});
             let mut tasks = Vec::new();
-            for _ in 0..10{
+            for _ in 0..5{
                 tasks.push(spawn_local(
                     sleepygreeting(pool.clone())
                 ));
