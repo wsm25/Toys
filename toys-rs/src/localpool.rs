@@ -9,8 +9,6 @@ Abandoned:
 - variable `INIT_SIZE`: rust still has inferring bugs for generic const
 */
 
-const INIT_SIZE:usize=8; // init size
-
 struct RawPool<'a, T>{ // `'a`: lifetime for `newfn`
     pool: Vec<*mut T>,
     newfn: Box<dyn FnMut()->*mut T+'a>
@@ -66,22 +64,17 @@ impl<'a, T> Pool<'a, T>{
     #[deprecated="use drop instead"]
     pub fn put(&mut self, _: PoolBox<T>){}
 
-    fn with_new<New>(mut newfn: New)->Self
+    fn with_new<New>(newfn: New)->Self
         where New:FnMut()->*mut T+'a{
-        let mut pool=Vec::with_capacity(INIT_SIZE);
-        for _ in 0..INIT_SIZE {
-            pool.push(newfn());
-        }
+        let pool=Vec::new();
         Pool(Rc::new(UnsafeCell::new(RawPool{ pool, newfn: Box::new(newfn)}))) 
     }
 
     /// Constructs a new object Pool which provides empty `T` objeccts. 
     /// # Unsafe
     /// Object are uninitialized.
-    pub unsafe fn new()->Self{
-        Self::with_new(||{
-            unsafe{mem::new()}
-        })
+    pub fn new()->Self{
+        Self::with_new(||unsafe{mem::new()})
     }
 
     /// Constructs a new object Pool which provides `T` objeccts
@@ -117,6 +110,37 @@ impl<'a, T> Pool<'a, T>{
     }
 
     pub fn idle(&self)->usize{self.inner().pool.len()}
+
+    /// Reserves idle objects for at least additional more items 
+    /// to be got from the given Pool<T>. 
+    pub fn reserve(&mut self, additional: usize){
+        let p=self.inner();
+        p.pool.resize_with(
+            p.pool.len()+additional, 
+            &mut *p.newfn
+        )
+    }
+
+    /// release `n` idling objects
+    pub fn release(&mut self, n: usize){
+        let pool=&mut self.inner().pool;
+        unsafe{
+        if n>pool.len(){ // release all
+            for i in 0..pool.len(){
+                mem::delete(*pool.get_unchecked(i));
+            }
+            pool.set_len(0);
+        } else { // release n
+            for i in pool.len()-n..pool.len(){
+                mem::delete(*pool.get_unchecked(i));
+            }
+            pool.set_len(pool.len()-n);
+        }}
+        // shrink vector to half
+        if pool.capacity()>64 && pool.len()<pool.capacity()>>2{
+            pool.shrink_to(pool.len()<<1);
+        }
+    }
 }
 
 /// drop will only be called when Rc counter returns 0
@@ -178,7 +202,7 @@ mod tests {
         let mut p = Pool::with_init(
             |x|{*x=counter; counter+=1;}
         );
-        assert_eq!(*p.get(), INIT_SIZE);
+        assert_eq!(*p.get(), 1);
         drop(p);
     }
 
@@ -195,17 +219,31 @@ mod tests {
         use super::*;
         let mut x=1;
         let mut p=Pool::with_generator(||{let y=x; x+=1; y});
-        assert_eq!(*p.get(), INIT_SIZE);
+        assert_eq!(*p.get(), 1);
     }
 
     #[test]
     fn test_clone(){
         use super::*;
-        let p:Pool<i32>=Pool::with_init(|_|{});
+        let p:Pool<i32>=Pool::new();
         let mut p1=p.clone();
         drop(p1.get()); // make sure p1 not stripped
     }
 
+    #[test]
+    fn test_reserve_release(){
+        use super::*;
+        use std::hint::black_box;
+        let mut p:Pool<i32>=Pool::new();
+        black_box(*p.get());
+        p.release(2); // does nothing
+        black_box(*p.get());
+        p.reserve(2);
+        assert_eq!(p.idle(),3);
+        p.release(2);
+        assert_eq!(p.idle(),1);
+        black_box(*p.get());
+    }
     
     #[test]
     fn test_tokio(){
