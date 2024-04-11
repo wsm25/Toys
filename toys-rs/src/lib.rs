@@ -5,3 +5,4 @@ pub mod localpool;
 pub mod thinpool;
 #[deprecated]
 pub mod locallock;
+pub mod rcnode;
