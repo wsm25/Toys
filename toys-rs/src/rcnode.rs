@@ -1,42 +1,42 @@
-/// Provide loop-safe nodelist implemented with `Rc`
-/// 
-/// # Basic concept
-/// The "next" pointer in memory indicates connection, thus 
-/// sharing lifespan with "value". However, the "handlers" as 
-/// local variable in essence "owns" both the pointer and 
-/// pointer->next.
-/// 
-/// Consider the classic example:
-/// ```rust, ignore
-/// use std::rc::Rc;
-/// use std::cell::Cell;
-/// struct Node{next: Cell<Option<Rc<Node>>>}
-/// let x=Rc::new(Node{next:Cell::new(None)});
-/// let y=Rc::new(Node{next:Cell::new(Some(x.clone()))});
-/// x.next.set(Some(y.clone()));
-/// ```
-/// 
-/// This code will cause memory leak as strong counter of both
-/// x and y will remain 1 after drop, thus keeping allocation until exit.
-/// 
-/// What we expect is that, as x, y both stores cloned `Rc`, it should
-/// drop the next when dropping itself whatever its strong counter.
-/// 
-/// Therefore, we introduce strong and weak nodes. The former owns
-/// both itself and next, working as handler; while the latter owns
-/// only itself, working as "next" indicator.
-/// 
-/// Nevertheless, we do not expose weak node structure, as it does not
-/// work in general and is highly customized for node type.
-/// 
-/// # TODO
-/// - implement peer list with Vec<Weak<T>>
-/// - complete document
-/// 
-/// # Unsafe
-/// This module is **extramely unsafe** to use on types that
-/// dynamically allocates memory - it is totally pointless.
-/// who wants a graph 
+//! Provide loop-safe nodelist implemented with `Rc`
+//! 
+//! # Basic concept
+//! The "next" pointer in memory indicates connection, thus 
+//! sharing lifespan with "value". However, the "handlers" as 
+//! local variable in essence "owns" both the pointer and 
+//! pointer->next.
+//! 
+//! Consider the classic example:
+//! ```rust, ignore
+//! use std::rc::Rc;
+//! use std::cell::Cell;
+//! struct Node{next: Cell<Option<Rc<Node>>>}
+//! let x=Rc::new(Node{next:Cell::new(None)});
+//! let y=Rc::new(Node{next:Cell::new(Some(x.clone()))});
+//! x.next.set(Some(y.clone()));
+//! ```
+//! 
+//! This code will cause memory leak as strong counter of both
+//! x and y will remain 1 after drop, thus keeping allocation until exit.
+//! 
+//! What we expect is that, as x, y both stores cloned `Rc`, it should
+//! drop the next when dropping itself whatever its strong counter.
+//! 
+//! Therefore, we introduce strong and weak nodes. The former owns
+//! both itself and next, working as handler; while the latter owns
+//! only itself, working as "next" indicator.
+//! 
+//! Nevertheless, we do not expose weak node structure, as it does not
+//! work in general and is highly customized for node type.
+//! 
+//! # TODO
+//! - implement peer list with Vec<Weak<T>>
+//! - complete document
+//! 
+//! # Unsafe
+//! This module is **extramely unsafe** to use on types that
+//! dynamically allocates memory - it is totally pointless.
+//! who wants a graph 
 use std::{cell::UnsafeCell, ops::{Deref, DerefMut}, rc::Rc};
 
 struct RawNode<T>{
