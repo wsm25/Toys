@@ -6,8 +6,7 @@
         "${userHome}\\AppData\\Local\\Arduino15\\packages\\esp32\\hardware\\esp32\\2.0.14\\variants\\esp32s3"
     ],
     "C_Cpp.default.cppStandard": "gnu++11",
-    "C_Cpp.default.intelliSenseMode": "gcc-x86",
-    "C_Cpp.default.compilerPath": "${userHome}\\AppData\\Local\\Arduino15\\packages\\esp32\\tools\\xtensa-esp32-elf-gcc\\esp-2021r2-patch5-8.4.0\\bin\\xtensa-esp32-elf-c++.exe",
+    "C_Cpp.default.compilerPath": "${userHome}\\AppData\\Local\\Arduino15\\packages\\esp32\\tools\\xtensa-esp32-elf-gcc\\esp-2021r2-patch5-8.4.0\\bin\\xtensa-esp32-elf-g++.exe",
     "C_Cpp.refactoring.includeHeader": "ifNeeded",
     "files.associations": {
         "cmath": "cpp"

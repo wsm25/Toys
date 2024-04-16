@@ -8,13 +8,13 @@ const unsigned lidartimeout=100; // in ms
 
 // offsets
 const int servo_offset = 95;  // 用于调整舵机中点
-const float car_x1=10;
-const float car_y1=10;
-const float car_x2=10;
-const float car_y2=10;
+const float car_left=-10;
+const float car_right=10;
 const float carlen=150;
 
 // pins
 const int SERVO_PIN = 3;
+
+const int speed=10;
 
 #endif // CUP_CONSTS_H
