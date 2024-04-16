@@ -9,6 +9,8 @@ RPLidar lidar;
 Servo servo;
 MotorDriver motor;
 
+#define Debug
+
 void setup() {
     #ifdef Debug
     Serial.begin(115200);  // debug serial
@@ -29,6 +31,7 @@ void setup() {
 inline const RPLidarMeasurement &read_lidar();
 
 void loop() {
+
     float dist[360];  // valid: 0-359
     RPLidarMeasurement p;
     do {
@@ -44,16 +47,17 @@ void loop() {
     Serial.printf("Operation on this loop: angle=%3f, speed=%3f\r\n\r\n",
                     next_status.angle, next_status.velocity);
     #endif
-
-    servo.write(constrain(next_status.angle, 80, 100));
+    for(int i=30; i<=150; i++) Serial.printf("%4.2f ", dist[i]);
+    Serial.println("");
+    servo.write(constrain(next_status.angle, 80, 100)+3);
     motor.drive(next_status.velocity);
     while(read_lidar().angle<270); // flush unused angles
 }
 
-
 inline const RPLidarMeasurement &read_lidar() {
     // wait data point
-    while (IS_FAIL(lidar.waitPoint(lidartimeout))) {  // fail, restart and rescan
+    while (IS_FAIL(lidar.waitPoint())) {  // fail, restart and rescan
+        Serial.println("lidar fail!");
         lidar.startScan(false, lidartimeout);
     }
     return lidar.getCurrentPoint();  // include 3 32-bit copy

@@ -3,6 +3,6 @@
 #define CUP_GO_H
 
 struct Go{float velocity, angle;};
-Go next(float* dist);
+Go next(const float* dist);
 
 #endif // CUP_GO_H
