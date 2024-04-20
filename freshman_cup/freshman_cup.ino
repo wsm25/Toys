@@ -10,8 +10,8 @@ RPLidar lidar;
 Servo servo;
 MotorDriver motor;
 
-extern float dist[360];
-extern bool valid[360];
+float dist[360];
+bool valid[360]={0};
 volatile bool tick=false;
 
 bool IRAM_ATTR TimerHandler(void * timerNo){
@@ -37,16 +37,15 @@ void setup() {
     // 定时中断
     ESP32Timer ITimer(1);
     ITimer.attachInterruptInterval(
-        400000,
+        150000,
         TimerHandler
     );
-    memset(valid, 0, 360*sizeof(bool));
 }
 
 void loop() {
     if(tick) { // call next
         tick=false;
-        auto next_status=next();
+        auto next_status=next(dist, valid);
         #ifdef Debug
         Serial.printf("operation on this loop: (%3.1f, %3.1f)\r\n",
             next_status.angle, next_status.velocity);
