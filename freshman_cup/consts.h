@@ -15,6 +15,6 @@ const float carlen=150;
 // pins
 const int SERVO_PIN = 3;
 
-const int speed=20;
+const int speed=10;
 
 #endif // CUP_CONSTS_H

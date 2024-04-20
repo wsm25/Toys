@@ -4,15 +4,22 @@
 #include "MotorDriver.h"
 #include "consts.h"
 #include "gogogo.h"
-#include "pid.h"
+#include "ESP32TimerInterrupt.h"
 
 RPLidar lidar;
 Servo servo;
 MotorDriver motor;
 
-PID pid_angle(0.3, 0.2, 0.3);
-
 #define Debug
+
+float dist[360];
+bool valid[360]={0};
+volatile bool tick=false;
+
+bool IRAM_ATTR TimerHandler(void * timerNo){
+    tick=true;
+    return true;
+}
 
 void setup() {
     #ifdef Debug
@@ -29,36 +36,38 @@ void setup() {
     servo.attach(SERVO_PIN);   // 连接舵机引脚
     servo.write(servo_offset);
     motor.begin();  // 开启电机驱动
+    // 定时中断
+    ESP32Timer ITimer(1);
+    ITimer.attachInterruptInterval(
+        150000,
+        TimerHandler
+    );
 }
 
-inline const RPLidarMeasurement &read_lidar();
-
 void loop() {
-    float dist[360];  // valid: 0-359
-    RPLidarMeasurement p;
-    do {
-        p = read_lidar();
+    if(tick) { // call next
+        tick=false;
+        auto next_status=next(dist, valid);
+        #ifdef Debug
+        Serial.printf("operation on this loop: (%3.1f, %3.1f) data\r\n",
+            next_status.angle, next_status.velocity);
+        #endif
+        servo.write(next_status.angle+3);
+        motor.drive(next_status.velocity);
+        memset(valid, 0, 360*sizeof(bool));
+    }
+    else { // read data
+        while (IS_FAIL(lidar.waitPoint())) {  // fail, restart and rescan
+            Serial.println("lidar fail!");
+            lidar.startScan(false);
+        }
+        auto &p = lidar.getCurrentPoint();
         // convert to standard polar angle
         int angle = int(p.angle);
         if (angle <= 90) angle = 90-angle; // 0-90
         else angle = 450-angle; // 91-359
-        dist[angle] = p.distance;
-    } while (p.angle <= 90 || p.angle >= 270); // read only front angle
-    Go next_status = next(dist);
-    #ifdef Debug
-    Serial.printf("Operation on this loop: angle=%3.1f, speed=%3.1f\r\n",
-                    next_status.angle, next_status.velocity);
-    #endif
-    servo.write(next_status.angle+3);
-    motor.drive(next_status.velocity);
-    while(read_lidar().angle<270); // flush unused angles
-}
-
-inline const RPLidarMeasurement &read_lidar() {
-    // wait data point
-    while (IS_FAIL(lidar.waitPoint())) {  // fail, restart and rescan
-        Serial.println("lidar fail!");
-        lidar.startScan(false, lidartimeout);
+        valid[angle]=true;
+        if(p.distance>5000 || p.distance<10) {valid[angle]=false;}
+        if (valid[angle]) dist[angle] = p.distance;
     }
-    return lidar.getCurrentPoint();  // include 3 32-bit copy
 }

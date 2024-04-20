@@ -12,75 +12,97 @@ inline float x_of(float r, float theta) {
     return r*cosf(theta*M_PI/180.);
 }
 
-const float bound_judge=10;
+const float bound_judge=20;
 
 Go next(const float* dist, const bool *valid){
     // left boundary
     int bound_left=150;
-    while((--bound_left)>=30){
-        if (dist[bound_left+1]<10 || dist[bound_left]<10) continue;
-        float diff=dist[bound_left+1]-dist[bound_left];
-        if(diff>bound_judge || diff<-bound_judge) break; // boundary found
+    while((bound_left)>=30){
+        while ((bound_left)>=30 && !valid[bound_left]) bound_left--;
+        int leftside=bound_left;
+        bool flag=false;
+        float diff=0;
+        while((--bound_left)>=30){
+            if(valid[bound_left]){
+                int angle=leftside-bound_left;
+                diff=(dist[leftside]-dist[bound_left])/angle;
+                flag=true;
+                break;
+            }
+        }
+        if(flag && (diff>bound_judge || diff<-bound_judge)) break; // boundary found
     }
     // boundary not found, turn!
     if (bound_left<30){
         float sum_left=0, sum_right=0;
         int count_left=0, count_right=0;
-        for(int i=30; i<150; i+=3){
-            if (dist[i+3]<10 || dist[i]<10) continue;
-            float dx=dist[i+3]-dist[i];
-            if(dx>0) {sum_left+=1./dist[i]; count_left++;}
-            else {sum_right+=1./dist[i]; count_right++;}
+        for(int i=30; i<150; i++){
+            if (!valid[i]) continue;
+            int rightside=i;
+            float dx=0;
+            while((++rightside)<150){
+                if(valid[rightside]){
+                    int angle=i-rightside;
+                    dx=dist[rightside]-dist[i];
+                    break;
+                }
+            }
+            if(dx>0) {sum_left+=(rightside-i)/dist[i]; count_left+=rightside-i;}
+            else if(dx<0) {sum_right+=(rightside-i)/dist[i]; count_right+=rightside-i;}
         }
-        if(count_left!=0) sum_left/=count_left;
+        if(count_left!=0) sum_left/=count_left; // greater is nearer
         if(count_right!=0)sum_right/=count_right;
-        float angle=90+5.*(sum_left-sum_right);
+        float angle=90+15000.*(sum_right-sum_left); // TODO
         #ifdef Debug
         Serial.printf("no boundary, turn! sum:(%f, %f), angle: %f\r\n", sum_left, sum_right, angle);
         #endif
         
         return Go{speed/3, constrain(angle, 80, 100)};
     }
+    #ifdef Debug
+    Serial.println("boundary found!");
+    #endif
     // boundary found, find right bound (which MUST exist)
     int bound_right=30;
-    while((++bound_right)<=bound_left){
-        if (dist[bound_right-1]<10 || dist[bound_right]<10) continue;
-        float diff=dist[bound_right-1]-dist[bound_right];
-        if(diff>bound_judge || diff<-bound_judge) break; // boundary found
+    while(bound_right<bound_left){
+        while ((bound_right<bound_left) && !valid[bound_right]) bound_right++;
+        int rightside=bound_right;
+        bool flag=false;
+        float diff=0;
+        while((++bound_right)<=bound_left){
+            if(valid[bound_right]){
+                int angle=bound_right-rightside;
+                diff=(dist[rightside]-dist[bound_left])/angle;
+                flag=true;
+                break;
+            }
+        }
+        if(flag && (diff>bound_judge || diff<-bound_judge)) break; // boundary found
     }
-    // 
-    // TODO: O(log(n)) implement proof
-    float left_angle=150;
-    bool left_angle_found=false;
-    for(int i=150; i>=bound_left; i--){
-        if (dist[i]<10) continue;
-        if(x_of(dist[i], i)>car_left) { // crash!
-            left_angle=i;
-            left_angle_found=true;
-            break;
+    // calculate left and right average distance
+    float sum_left = 0;
+    int cnt_left = 0;
+    for (int i = bound_left; i <= 150; i++) {
+        if (valid[i]) {
+            sum_left += x_of(dist[i],i)-car_left;
+            cnt_left++;
+        } 
+    }
+    if (cnt_left) sum_left /= cnt_left;
+    float sum_right = 0; 
+    int cnt_right = 0;
+    for (int i = bound_right; i >= 30; i--) {
+        if (valid[i]) {
+            sum_right += x_of(dist[i],i)-car_right;
+            cnt_right++;
         }
     }
-    float right_angle=30;
-    bool right_angle_found=false;
-    for(int i=30; i<=bound_right; i++){
-        if (dist[i]<10) continue;
-        if(x_of(dist[i], i)<car_right) { // crash!
-            right_angle=i-1;
-            right_angle_found=true;
-            break;
-        }
-    }
+    if (cnt_right) sum_right /= cnt_right;
     #ifdef Debug
-    Serial.printf("boundary found! (%f, %f) \r\n", left_angle, right_angle);
-    #endif
-    if (!(left_angle_found || right_angle_found)) // safe
-        return Go{speed, 90};
-    if (!left_angle_found && right_angle_found) { // right will crash
-        return Go{speed/3, 100};
-    }
-    if (left_angle_found && !right_angle_found) { // left will crash
-        return Go{speed/3, 80};
-    }
-    // will both crash, boom! (?)
-    return Go{speed/5, constrain(90+(left_angle-right_angle)/2,80,100)};
+        Serial.printf("boundary found (%d, %d)! sum:(%f, %f), angle: %f\r\n", 
+            bound_left, bound_right,
+            sum_left, sum_right, -0.15f*(sum_left+sum_right)+90);
+        #endif
+    // go
+    return Go{speed, constrain(-0.1f*(sum_left+sum_right), -10, 10)+90};
 }
