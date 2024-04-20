@@ -14,7 +14,7 @@ inline float x_of(float r, float theta) {
 
 const float bound_judge=10;
 
-Go next(const float* dist){
+Go next(const float* dist, const bool *valid){
     // left boundary
     int bound_left=150;
     while((--bound_left)>=30){
@@ -32,14 +32,14 @@ Go next(const float* dist){
             if(dx>0) {sum_left+=1./dist[i]; count_left++;}
             else {sum_right+=1./dist[i]; count_right++;}
         }
-        sum_left/=count_left;
-        sum_right/=count_right;
+        if(count_left!=0) sum_left/=count_left;
+        if(count_right!=0)sum_right/=count_right;
         float angle=90+5.*(sum_left-sum_right);
         #ifdef Debug
         Serial.printf("no boundary, turn! sum:(%f, %f), angle: %f\r\n", sum_left, sum_right, angle);
         #endif
         
-        return Go{speed/3, angle};
+        return Go{speed/3, constrain(angle, 80, 100)};
     }
     // boundary found, find right bound (which MUST exist)
     int bound_right=30;
@@ -82,5 +82,5 @@ Go next(const float* dist){
         return Go{speed/3, 80};
     }
     // will both crash, boom! (?)
-    return Go{speed/5, 90+(left_angle-right_angle)/2};
+    return Go{speed/5, constrain(90+(left_angle-right_angle)/2,80,100)};
 }

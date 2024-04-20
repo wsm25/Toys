@@ -10,6 +10,8 @@ RPLidar lidar;
 Servo servo;
 MotorDriver motor;
 
+PID pid_angle(0.3, 0.2, 0.3);
+
 #define Debug
 
 void setup() {
@@ -44,12 +46,10 @@ void loop() {
     } while (p.angle <= 90 || p.angle >= 270); // read only front angle
     Go next_status = next(dist);
     #ifdef Debug
-    Serial.printf("Operation on this loop: angle=%3f, speed=%3f\r\n\r\n",
+    Serial.printf("Operation on this loop: angle=%3.1f, speed=%3.1f\r\n",
                     next_status.angle, next_status.velocity);
     #endif
-    for(int i=30; i<=150; i++) Serial.printf("%4.2f ", dist[i]);
-    Serial.println("");
-    servo.write(constrain(next_status.angle, 80, 100)+3);
+    servo.write(next_status.angle+3);
     motor.drive(next_status.velocity);
     while(read_lidar().angle<270); // flush unused angles
 }
