@@ -10,8 +10,6 @@ RPLidar lidar;
 Servo servo;
 MotorDriver motor;
 
-#define Debug
-
 float dist[360];
 bool valid[360]={0};
 volatile bool tick=false;
@@ -49,7 +47,7 @@ void loop() {
         tick=false;
         auto next_status=next(dist, valid);
         #ifdef Debug
-        Serial.printf("operation on this loop: (%3.1f, %3.1f) data\r\n",
+        Serial.printf("operation on this loop: (%3.1f, %3.1f)\r\n",
             next_status.angle, next_status.velocity);
         #endif
         servo.write(next_status.angle+3);
@@ -58,7 +56,9 @@ void loop() {
     }
     else { // read data
         while (IS_FAIL(lidar.waitPoint())) {  // fail, restart and rescan
+            #ifdef Debug
             Serial.println("lidar fail!");
+            #endif
             lidar.startScan(false);
         }
         auto &p = lidar.getCurrentPoint();

@@ -2,14 +2,13 @@
 #include "consts.h"
 #include <math.h>
 #include <Arduino.h>
-#define Debug
 // two situations:
 // - should run in the middle of left and right bound
 // - have one bound in front, should turn
 
 /// return x coordinate of polar cord (r, theta)
 inline float x_of(float r, float theta) {
-    return r*cosf(theta*M_PI/180.);
+    return r*cosf(theta*M_PI/180.f);
 }
 
 const float bound_judge=20;
@@ -52,12 +51,23 @@ Go next(const float* dist, const bool *valid){
         }
         if(count_left!=0) sum_left/=count_left; // greater is nearer
         if(count_right!=0)sum_right/=count_right;
-        float angle=90+15000.*(sum_right-sum_left); // TODO
+        float angle=constrain(15000.*(sum_right-sum_left), -10, 10); // TODO
         #ifdef Debug
         Serial.printf("no boundary, turn! sum:(%f, %f), angle: %f\r\n", sum_left, sum_right, angle);
         #endif
-        
-        return Go{speed/3, constrain(angle, 80, 100)};
+        // correction on speed and angle, based on distance
+        // from 0 to -angle.
+        int to=int(-angle*0.66)+90, count=0;
+        float sum=0;
+        if(angle<0) for(int i=90; i<to; i++) 
+            if(valid[i]) {sum+=dist[i]; count++;}
+        else for(int i=90; i>to; i--)
+            if(valid[i]) {sum+=dist[i]; count++;}
+        /// 100mm as danger zone
+        if(count>0){
+            sum/=count;
+            return Go{speed*constrain(sum*.01f, 0.5f, 1.f), angle*10.f/sqrtf(sum)+90};
+        } else return Go{speed*0.5f, angle+90}; // ?
     }
     #ifdef Debug
     Serial.println("boundary found!");
@@ -99,10 +109,24 @@ Go next(const float* dist, const bool *valid){
     }
     if (cnt_right) sum_right /= cnt_right;
     #ifdef Debug
-        Serial.printf("boundary found (%d, %d)! sum:(%f, %f), angle: %f\r\n", 
-            bound_left, bound_right,
-            sum_left, sum_right, -0.15f*(sum_left+sum_right)+90);
-        #endif
+    Serial.printf("boundary found (%d, %d)! sum:(%f, %f), angle: %f\r\n", 
+        bound_left, bound_right,
+        sum_left, sum_right, -0.15f*(sum_left+sum_right)+90);
+    #endif
+    float angle=constrain(-12.f*(sum_left+sum_right)/min(abs(sum_right),abs(sum_left)), -10, 10);
+    // correction on speed and angle, based on distance
+        // from 0 to -angle.
+        int to=int(-angle*0.66)+90, count=0;
+        float sum=0;
+        if(angle<0) for(int i=90; i<to; i++) 
+            if(valid[i]) {sum+=dist[i]; count++;}
+        else for(int i=90; i>to; i--)
+            if(valid[i]) {sum+=dist[i]; count++;}
+        /// 100mm as danger zone
+        if(count>0){
+            sum/=count;
+            return Go{speed*constrain(sum*.01f, 0.8f, 1.f), angle*200/sum+90};
+        } else return Go{speed*0.5f, angle+90}; // ?
     // go
-    return Go{speed, constrain(-0.1f*(sum_left+sum_right), -10, 10)+90};
+    return Go{speed, +90};
 }
