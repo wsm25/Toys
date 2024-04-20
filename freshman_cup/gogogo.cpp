@@ -78,7 +78,7 @@ Go next(const float* dist){
     if (!left_angle_found && right_angle_found) { // right will crash
         return Go{speed/3, 100};
     }
-    if (left_angle_found && !right_angle_found) { // right will crash
+    if (left_angle_found && !right_angle_found) { // left will crash
         return Go{speed/3, 80};
     }
     // will both crash, boom! (?)

@@ -4,6 +4,7 @@
 #include "MotorDriver.h"
 #include "consts.h"
 #include "gogogo.h"
+#include "pid.h"
 
 RPLidar lidar;
 Servo servo;
