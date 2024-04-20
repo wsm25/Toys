@@ -31,7 +31,6 @@ void setup() {
 inline const RPLidarMeasurement &read_lidar();
 
 void loop() {
-
     float dist[360];  // valid: 0-359
     RPLidarMeasurement p;
     do {
