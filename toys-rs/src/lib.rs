@@ -1,8 +1,7 @@
 //! Rust toy libraries
 pub mod mem;
 pub mod localpool;
-#[deprecated="benchmark shows terrible performance"]
-pub mod thinpool;
+pub mod heappool;
 #[deprecated]
 pub mod locallock;
 pub mod rcnode;
