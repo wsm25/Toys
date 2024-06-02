@@ -1,7 +1,6 @@
 use rusqlite::{Connection, Statement, Result};
 
-use chrono::{DateTime, Utc};
-use serde::Serialize;
+use serde::{Serialize, Deserialize};
 
 pub struct DataBase<'a>{
     // static safety: stmt is bound to conn
@@ -76,32 +75,29 @@ impl<'a> DataBase<'a>{
     }
 
     pub fn query_bathtrunks<'b>(&'b mut self, building: &str)
-        ->Result<impl Iterator<Item=Result<BathTrunk>>+'b>{
+        ->Result<impl Iterator<Item=Result<(isize, BathTrunk)>>+'b>{
         self.query_bt.query_map([building],|row|{
-            Ok(BathTrunk{
-                id: row.get(0)?,
-                building: row.get(1)?,
-                cord: (row.get(2)?, row.get(3)?)
-            })
+            Ok((
+                row.get(0)?,
+                BathTrunk{
+                    building: row.get(1)?,
+                    cord: (row.get(2)?, row.get(3)?)
+                }
+            ))
         })
     }
 
     pub fn query_comments<'b>(&'b mut self, building: i32)
-        ->Result<impl Iterator<Item=Result<Comment>>+'b>{
+        ->Result<impl Iterator<Item=Result<(isize, Comment)>>+'b>{
         self.query_comment.query_map([building],|row|{
-            Ok(Comment{
-                id: row.get(0)?,
-                btid: row.get(1)?,
-                score: row.get(2)?,
-                time: DateTime::from_timestamp_millis(row.get(3)?).ok_or(
-                    rusqlite::Error::InvalidColumnType(
-                        8,
-                        "Chrono error: out-of-range number of milliseconds".to_string(), 
-                        rusqlite::types::Type::Integer
-                    )
-                )?, // TODO: wrap to error
-                message: row.get(4)?
-            })
+            Ok((
+                row.get(0)?,
+                Comment{
+                    btid: row.get(1)?,
+                    score: row.get(2)?,
+                    time: row.get(3)?,
+                    message: row.get(4)?
+            }))
         })
     }
 
@@ -117,47 +113,23 @@ impl<'a> DataBase<'a>{
         self.ins_comment.execute((
             &c.btid,
             &c.score,
-            &c.time.timestamp_millis(),
+            &c.time,
             &c.message
         ))
     }
 }
 
-#[derive(Debug, )]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct BathTrunk{
-    pub id: i32,
     pub building: String,
     pub cord: (i32, i32),
 }
 
-#[derive(Debug, )]
-pub struct Query<T: Debug+Serialize>{
-    pub succeed: bool,
-    pub id: i32,
-    pub 
-    pub building: String,
-    pub cord: (i32, i32),
-}
-
-pub struct QueryItem<T: Debug+Serialize>{
-    pub id:isize,
-    
-}
-
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Comment{
-    pub id: i32,
     pub btid: i32, // bath trunk id
     pub score: i32, // 0-9
-    pub time: DateTime<Utc>, // store mili timestamp
-    pub message: String,
-}
-
-#[derive(Debug)]
-pub struct CreateComment{
-    pub btid: i32, // bath trunk id
-    pub score: i32, // 0-9
-    pub time: DateTime<Utc>, // store mili timestamp
+    pub time: i64, // store mili timestamp
     pub message: String,
 }
 
@@ -177,22 +149,21 @@ mod tests{
         let mut db=DataBase::new(&conn)?;
         // bt
         db.ins_bathtrunk(&BathTrunk{
-            id:0, building: "114".to_string(), cord:(1,2)
+            building: "114".to_string(), cord:(1,2)
         })?;
         assert_eq!(
-            db.query_bathtrunks("114")?.next().unwrap()?.cord,
+            db.query_bathtrunks("114")?.next().unwrap()?.1.cord,
             (1,2)
         );
         // com
         db.ins_comment(&Comment{
-            id:0, 
             btid: 0,
             score: 9,
-            time: Utc::now(),
+            time: 114514,
             message: "nice bathtrunk!".to_string(),
         })?;
         assert_eq!(
-            db.query_comments(0)?.next().unwrap()?.message,
+            db.query_comments(0)?.next().unwrap()?.1.message,
             "nice bathtrunk!"
         );
         Ok(())
