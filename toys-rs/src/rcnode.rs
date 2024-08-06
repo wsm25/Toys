@@ -30,7 +30,7 @@
 //! work in general and is highly customized for node type.
 //! 
 //! # TODO
-//! - implement peer list with Vec<Weak<T>>
+//! - implement peer list with `Vec<Weak<T>>`
 //! - complete document
 //! 
 //! # Unsafe

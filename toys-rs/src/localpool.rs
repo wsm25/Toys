@@ -34,10 +34,11 @@ struct RawPool<'a, T>{ // `'a`: lifetime for `newfn`
 /// use toys_rs::localpool::Pool;
 /// let mut counter = 1;
 /// let mut p = Pool::with_init(|x|{*x=counter; counter+=1;});
-/// assert_eq!(*p.get(), 8);
+/// // pool is empty, new one
+/// assert_eq!(*p.get(), 1);
 /// // Now the p.get() is dropped, so it is put into pool.
 /// // Another get() will get the same object.
-/// assert_eq!(*p.get(), 8);
+/// assert_eq!(*p.get(), 1);
 /// ```
 #[derive(Clone)]
 pub struct Pool<'a, T>
@@ -112,7 +113,7 @@ impl<'a, T> Pool<'a, T>{
     pub fn idle(&self)->usize{self.inner().pool.len()}
 
     /// Reserves idle objects for at least additional more items 
-    /// to be got from the given Pool<T>. 
+    /// to be got from the given `Pool<T>`. 
     pub fn reserve(&mut self, additional: usize){
         let p=self.inner();
         p.pool.resize_with(
