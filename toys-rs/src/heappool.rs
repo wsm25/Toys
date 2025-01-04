@@ -6,6 +6,8 @@
 //! - prefer lower address
 //! - can automatically dealloc high address
 
+use std::{collections::BinaryHeap, ptr::NonNull};
+
 pub struct Heap<T>{
     raw: *mut T,
     top: *mut T,
@@ -101,5 +103,3 @@ mod tests {
     }    
     */
 }
-
-use std::{collections::BinaryHeap, ptr::NonNull};

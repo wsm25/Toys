@@ -7,3 +7,4 @@ pub mod heappool;
 pub mod locallock;
 pub mod rcnode;
 pub mod plain;
+pub mod lru;

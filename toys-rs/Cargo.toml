@@ -6,12 +6,18 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+hashbrown = "0.15" # lru
 
 [dev-dependencies]
 tokio = {version="1", features=["rt", "time"]}
 rand = "0.8"
-criterion = { version = "0.4"}
+criterion = "0.5"
+lru-foo = { package = "lru", version = "0.12" }
 
 [[bench]]
 name = "benchmark"
+harness = false
+
+[[bench]]
+name = "lru"
 harness = false

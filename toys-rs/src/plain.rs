@@ -37,6 +37,8 @@
 use core::ops::{Deref, DerefMut};
 
 /// types that can safely load from plain bytes array.
+/// 
+/// # Safety
 /// - No dereference should be included, or it should wrap
 ///   with `Option`s that clears before converted to bytes
 /// - Initial value can be cloned by plain memcopy
@@ -77,7 +79,7 @@ pub enum MyCow<'a, T:Plain>{
     Owned(T),
 }
 
-impl<'a,T:Plain> Deref for MyCow<'a, T> {
+impl<T:Plain> Deref for MyCow<'_, T> {
     type Target = T;
     fn deref(&self) -> &T {
         match self {
@@ -88,7 +90,7 @@ impl<'a,T:Plain> Deref for MyCow<'a, T> {
     }
 }
 
-impl<'a, T:Plain> DerefMut for MyCow<'a, T> {
+impl<T:Plain> DerefMut for MyCow<'_, T> {
     fn deref_mut(&mut self) -> &mut T {
         match self {
             Self::Borrow(p)=>{
@@ -96,13 +98,13 @@ impl<'a, T:Plain> DerefMut for MyCow<'a, T> {
                 *self=Self::Owned(unsafe{core::ptr::read(p)});
                 if let Self::Owned(x)=self {x} else {panic!()} // never
             },
-            Self::BorrowMut(x)=>*x,
+            Self::BorrowMut(x)=>x,
             Self::Owned(x)=>x
         }
     }
 }
 
-impl<'a, T:Plain> MyCow<'a, T> {
+impl<T:Plain> MyCow<'_, T> {
     /// consumes the cow pointer and returns inner value
     pub fn into_inner(self)->T {
         match self {

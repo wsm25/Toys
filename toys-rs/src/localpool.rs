@@ -9,6 +9,9 @@ Abandoned:
 - variable `INIT_SIZE`: rust still has inferring bugs for generic const
 */
 
+use std::{cell::UnsafeCell, rc::Rc};
+use crate::mem;
+
 struct RawPool<'a, T>{ // `'a`: lifetime for `newfn`
     pool: Vec<*mut T>,
     newfn: Box<dyn FnMut()->*mut T+'a>
@@ -45,14 +48,19 @@ pub struct Pool<'a, T>
     (Rc<UnsafeCell<RawPool<'a, T>>>);
 
 impl<'a, T> Pool<'a, T>{
-    fn inner(&self)->&mut RawPool<'a, T>{
+    fn inner(&self)->&RawPool<'a, T>{
+        // SAFETY: within one thread, only one mut can be got
+        unsafe{&*self.0.get()}
+    }
+
+    fn inner_mut(&mut self)->&mut RawPool<'a, T>{
         // SAFETY: within one thread, only one mut can be got
         unsafe{&mut *self.0.get()}
     }
 
     /// Gets an object from pool
     pub fn get(&mut self)->PoolBox<T>{
-        let p=self.inner();
+        let p=self.inner_mut();
         match p.pool.pop(){
         Some(x)=>PoolBox{value:x, pool:&mut p.pool},
         None=>PoolBox{value: (*p.newfn)(), pool: &mut p.pool}
@@ -115,7 +123,7 @@ impl<'a, T> Pool<'a, T>{
     /// Reserves idle objects for at least additional more items 
     /// to be got from the given `Pool<T>`. 
     pub fn reserve(&mut self, additional: usize){
-        let p=self.inner();
+        let p=self.inner_mut();
         p.pool.resize_with(
             p.pool.len()+additional, 
             &mut *p.newfn
@@ -124,7 +132,7 @@ impl<'a, T> Pool<'a, T>{
 
     /// release `n` idling objects
     pub fn release(&mut self, n: usize){
-        let pool=&mut self.inner().pool;
+        let pool=&mut self.inner_mut().pool;
         unsafe{
         if n>pool.len(){ // release all
             for i in 0..pool.len(){
@@ -145,7 +153,7 @@ impl<'a, T> Pool<'a, T>{
 }
 
 /// drop will only be called when Rc counter returns 0
-impl<'a, T> Drop for RawPool<'a, T>{
+impl<T> Drop for RawPool<'_, T>{
     fn drop(&mut self) {
         for x in &self.pool{
             // println!("dropping poolbox {:#?}", *x);
@@ -253,10 +261,10 @@ mod tests {
             task::{LocalSet, spawn_local, yield_now},
         };
         use super::*;
-        async fn sleepygreeting<'a>(mut pool: Pool<'a, i32>){
+        async fn sleepygreeting(mut pool: Pool<'_, i32>){
             for _ in 0..5{
                 let x=pool.get();
-                if true==rand::random(){
+                if rand::random(){
                     yield_now().await;
                 }
                 println!("Get {} from pool!", *x);
@@ -281,6 +289,3 @@ mod tests {
     }    
     
 }
-
-use std::{cell::UnsafeCell, rc::Rc};
-use crate::mem;

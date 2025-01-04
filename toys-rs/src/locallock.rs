@@ -54,7 +54,7 @@ impl LocalLock{
         unsafe{&mut *self.lockcell.get()}
     }
 
-    pub fn lock(&mut self)->& mut LocalLocker{
+    pub fn lock(&mut self)->&mut LocalLocker{
         unsafe{std::mem::transmute(self)}
     }
 
@@ -94,6 +94,12 @@ impl LocalLock{
 impl Drop for LocalLock{
     fn drop(&mut self) {
         self.try_unlock();
+    }
+}
+
+impl Default for LocalLock {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

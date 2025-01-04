@@ -49,7 +49,11 @@ impl<T> Clone for Weak<T>{fn clone(&self) -> Self
     {Self(self.0.clone())}}
 
 impl<T> Weak<T>{
-    fn inner(&self)->&mut RawNode<T>{
+    fn inner(&self)->&RawNode<T>{
+        // SAFETY(1): assume mut value works fine
+        unsafe{&*self.0.get()}
+    }
+    fn inner_mut(&mut self)->&mut RawNode<T>{
         // SAFETY(1): assume mut value works fine
         unsafe{&mut *self.0.get()}
     }
@@ -89,8 +93,11 @@ impl<T> Weak<T>{
 pub struct Node<T>(Weak<T>);
 
 impl<T> Node<T>{
-    fn inner(&self)->&mut RawNode<T>{
+    fn inner(&self)->&RawNode<T>{
         self.0.inner()
+    }
+    fn inner_mut(&mut self)->&mut RawNode<T>{
+        self.0.inner_mut()
     }
     pub fn new(value: T)->Self{
         Self(Weak::new(value))
@@ -99,19 +106,16 @@ impl<T> Node<T>{
         Self(Weak::with_next(value, next.0.clone()))
     }
     pub fn point(&mut self, next: &Self){
-        self.inner().next=Some(next.0.clone());
+        self.inner_mut().next=Some(next.0.clone());
     }
     pub fn point_null(&mut self){
-        self.inner().next=None;
+        self.inner_mut().next=None;
     }
     pub fn ref_count(&self)->usize{
         self.0.ref_count()
     }
     pub fn next(&self)->Option<Self>{
-        match &self.inner().next{
-        None=>None,
-        Some(next)=>Some(next.stronger().clone())
-        }
+        self.inner().next.as_ref().map(|next| next.stronger().clone())
     }
 }
 
@@ -129,7 +133,7 @@ impl<T> Clone for Node<T>{
 
 impl<T> Drop for Node<T>{
     fn drop(&mut self) {
-        if let Some(n)=&mut self.inner().next{
+        if let Some(n)=&mut self.inner_mut().next{
             // SAFETY(10): next won't live shorter than self
             // as its counter is always larger than self
             unsafe{std::ptr::drop_in_place(n)}; // counter-=1;
@@ -146,7 +150,7 @@ impl<T> Deref for Node<T>{
 
 impl<T> DerefMut for Node<T>{
     fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.inner().value
+        &mut self.inner_mut().value
     }
 }
 
@@ -177,8 +181,8 @@ mod tests {
     fn cycling(){
         use super::*;
         let mut x=Node::new(1);
-        let mut y=Node::with_next(2, &mut x);
-        x.point(&mut y);
+        let y=Node::with_next(2, &x);
+        x.point(&y);
         assert_eq!(2, x.ref_count());
         assert_eq!(2, y.ref_count());
         drop(y);
@@ -188,8 +192,8 @@ mod tests {
     fn next(){
         use super::*;
         let mut x=Node::new(1);
-        let mut y=Node::with_next(2, &mut x);
-        x.point(&mut y);
+        let y=Node::with_next(2, &x);
+        x.point(&y);
         let ynext=y.next().unwrap();
         assert_eq!(3, x.ref_count());
         assert_eq!(3, y.ref_count());
